@@ -1,5 +1,75 @@
 {% extends "base_generic.html" %}
 
 {% block content %}
-<h1>!</h1>
+<style>
+    #store li {
+        background-color: brown;
+    }
+    #store li.online {
+        background-color: chartreuse;
+    }
+    #store li.disabled {
+        background-color: darkgray;
+    }
+</style>
+<ul id="store">
+    {% for stored_url in urls %}
+    <li class="" onclick="toggleMonitoring(this)">{{ stored_url.body }}</li>
+    {% endfor %}
+</ul>
+<hr>
+<form action="">
+    <label for="interval">Seconds</label>
+    <input type="number" name="interval" id="interval" value="30" min="1">
+    <button onclick="updateChecker(event)">Apply</button>
+</form>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    var task;
+
+    function toggleMonitoring(item) {
+        $(item).toggleClass('disabled');
+        if ($(item).hasClass('online'))
+            $(item).toggleClass('online')
+    }
+
+    function check() {
+        $.each($('#store li'), function (index, item) {
+            if ($(item).hasClass('disabled'))
+                return;
+            $.ajax({
+                type: 'GET',
+                url: $(item).text(),
+                crossDomain: true,
+                dataType: 'jsonp',
+                statusCode: {
+                    200: function (params) {
+                        $(item).attr('class', 'online')
+                    }
+                },
+                error: function () {
+                    if ($(item).hasClass('online'))
+                        $(item).toggleClass('online')
+                }
+            })
+        });
+    }
+
+    function initChecker() {
+        let interval = $('#interval').val();
+        check();
+        task = setInterval(check, interval * 1000);
+    }
+
+    function updateChecker(event) {
+        event.preventDefault();
+        clearInterval(task);
+        initChecker()
+    }
+    $(function() {
+        initChecker()
+    });
+</script>
 {% endblock %}
